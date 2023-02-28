@@ -6,32 +6,37 @@ import { IDog } from "../types";
 
 
 export const getAllDogs = async (req : Request, res: Response, next: NextFunction) => {
-    const {temperament} = req.query
-     const order = parseInt(req.query.order as string)
-     const { height , weight , search} = req.query
+    
+    const { temperament, height, weight, search, alphabet } = req.query;
+    const page = Math.max(parseInt(req.query.page as string), 1);
+    const order = parseInt(req.query.order as string);
    
     const options = {
-        limit: 9,
-        page: parseInt(req.query.page as string) ,
-        sort  : {name : order},
-        
-      };
-    
+      limit: 9,
+      page,
+      sort: { name: order },
+    }
+       
+
     
     try {
-            
-          if(!height && !weight && !search) {
+
+           
+        if(!height && !weight && !search && !alphabet) {
             const dogs = await DogModel.paginate( { temperament :  { "$regex": `${temperament}`, "$options": "i" } ,
            
            } , options)
            return  res.status(200).json(dogs)
           }
-        
-          const dogs = await DogModel.paginate( { temperament :  { "$regex": `${temperament}`, "$options": "i" } ,
-           height : {"$regex": `${height}`, "$options": "$gte"},
-         weight : {  "$regex": `${weight}`, "$options": "$gte" },
-         name :  { "$regex": `${search}`, "$options": "i" }
-          } , options)
+          
+        const dogs = await DogModel.paginate({
+            temperament: { "$regex": `${temperament}`, "$options": "i" },
+            height: { "$regex": `${height}`, "$options": "$gte" },
+            weight: { "$regex": `${weight}`, "$options": "$gte" },
+            name: { "$regex": `^${search ? search : alphabet}`, "$options": "i" },
+          }, options);
+       
+         
            res.status(200).json(dogs)
     } catch (error) {
         next(error)
@@ -39,13 +44,14 @@ export const getAllDogs = async (req : Request, res: Response, next: NextFunctio
 }
 
 
+
 export const postDog = async (req : Request, res: Response, next: NextFunction) => {
        
-       const {name,weight,height,life_span,image, temperament} : IDog = req.body
+       const {name,weight,height,life_span,image, temperament, user} : IDog = req.body
        console.log(req.body)
      try {
         
-        const newDog = new DogModel({name,weight,height,life_span,image, temperament})
+        const newDog = new DogModel({name,weight,height,life_span,image, temperament, user})
 
        await newDog.save()
         
